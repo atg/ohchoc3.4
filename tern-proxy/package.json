@@ -1,0 +1,36 @@
+{
+  "name": "ternproxy",
+  "version": "1.0.0",
+  "main": "src/proxy/daemon.js",
+  "license": "Unlicense",
+  "dependencies": {
+    "async": "^2.0.0-rc.2",
+    "deepmerge": "^0.2.10",
+    "formidable": "^1.0.17",
+    "highlight.js": "^9.2.0",
+    "jsctags": "^5.0.1",
+    "lodash.groupby": "^4.2.1",
+    "lodash.map": "^4.2.2",
+    "lodash.mapvalues": "^4.2.1",
+    "lodash.some": "^4.2.2",
+    "lodash.sortby": "^4.2.2",
+    "mkdirp": "^0.5.1",
+    "optimist": "^0.6.1",
+    "posix": "^4.0.1",
+    "remarkable": "^1.6.2",
+    "semver": "^5.1.0",
+    "tryor": "^0.1.2",
+    "tern": "fileability/tern#35b4946"
+  },
+  "scripts": {
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "eslint": "^2.6.0",
+    "eslint-config-semistandard": "^6.0.1",
+    "eslint-config-standard": "^5.1.0",
+    "eslint-plugin-promise": "^1.1.0",
+    "eslint-plugin-react": "^4.2.3",
+    "eslint-plugin-standard": "^1.3.2"
+  }
+}
