@@ -2,7 +2,9 @@ var noop = function() {};
 var merge = require('deepmerge');
 var tryor = require('tryor');
 var some = require('lodash.some');
+var uniq = require('lodash.uniq');
 var format = require('util').format;
+var Module = require('module');
 var path = require('path');
 var fs = require('fs');
 
@@ -32,14 +34,8 @@ var get_cfg = function(file) {
   }
 };
 
-var def_cfg = get_cfg(path.join(process.env.HOME, '.tern-project'));
-
 utils.get.config = function(dir) {
   var file = path.join(dir, '.tern-project');
-
-  if (!fs.existsSync(file) && def_cfg) {
-    return def_cfg;
-  }
 
   return merge(tryor(function() {
     return get_cfg(file) || {};
@@ -54,11 +50,13 @@ utils.load.plugins = function(plugins) {
   var base = path.resolve(utils.find.module('tern'), 'plugin');
   var local = path.resolve(__dirname, '../node_modules/jsctags/src/local-scope');
 
-  var attempt = function(file) {
-    if (file === 'local-scope') {
+  var attempt = function(name) {
+    if (name === 'local-scope') {
       require(local);
       return true;
     }
+
+    var file = Module._findPath(name, module.paths);
 
     if (!fs.existsSync(file)) {
       return false;
@@ -84,7 +82,11 @@ utils.find.module = function(name) {
 utils.find.defs = function(libs) {
   var base = path.resolve(utils.find.module('tern'), 'defs');
 
-  return libs.map(function(lib) {
+  return uniq(libs.map(function(lib) {
+    if (/^ecma5|^ecma6/) {
+      lib = 'ecmascript';
+    }
+
     if (!/\.json$/.test(lib)) {
       lib = lib + '.json';
     }
@@ -94,7 +96,15 @@ utils.find.defs = function(libs) {
     }
 
     if (fs.existsSync(lib)) {
+      return lib;
+    }
+  }).filter(function(lib) {
+    return utils.defined(lib);
+  })).map(function(lib) {
+    try {
       return require(lib);
+    } catch (err) {
+      return;
     }
   }).filter(function(lib) {
     return utils.defined(lib);
