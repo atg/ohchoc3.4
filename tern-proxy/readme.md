@@ -1,10 +1,3 @@
-TODO:
- - static
- - const
- - está a identificar class variable quando é scoped
- - nas `class` está a identificar metodos como variaveis
- 
-
 # ternproxy
 
 ## license
