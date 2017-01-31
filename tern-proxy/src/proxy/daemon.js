@@ -47,6 +47,40 @@ router.post('/file/closed', function(req, res) {
   utils.http.respond(req, res)(null, 'Document closed');
 });
 
+var warmUp = function(workspace, req, fn) {
+  workspace.tern.request({
+    files: proxy.file(req.body, workspace),
+    query: {
+      type: 'completions',
+      file: '#0',
+      types: true,
+      depths: true,
+      docs: true,
+      urls: true,
+      sort: false,
+      omitObjectPrototype: false,
+      guess: true,
+      filter: true,
+      origins: true,
+      end: req.body.cursor_position
+    }
+  }, function(err) {
+    if (err) {
+      console.error(err.stack);
+    }
+
+    fn();
+
+    if (!utils.defined(req.body.heuristics)) {
+      return;
+    }
+
+    setImmediate(function() {
+      workspace.heuristics(req.body.heuristics);
+    });
+  });
+}
+
 /**
  * Asks the server for a set of completions at the given point.
  *
@@ -146,14 +180,16 @@ router.post('/definition', function(req, res) {
     return utils.http.respond(req, res)(null, undefined, 304);
   }
 
-  workspace.tern.request({
-    files: proxy.file(req.body, workspace),
-    query: {
-      type: 'definition',
-      end: req.body.cursor_position,
-      file: '#0'
-    }
-  }, utils.http.respond(req, res));
+  warmUp(workspace, req, function() {
+    workspace.tern.request({
+      files: proxy.file(req.body, workspace),
+      query: {
+        type: 'definition',
+        end: req.body.cursor_position,
+        file: '#0'
+      }
+    }, utils.http.respond(req, res));
+  });
 });
 
 /**
@@ -187,14 +223,16 @@ router.post('/type', function(req, res) {
     return utils.http.respond(req, res)(null, undefined, 304);
   }
 
-  workspace.tern.request({
-    files: proxy.file(req.body, workspace),
-    query: {
-      type: 'type',
-      end: req.body.cursor_position,
-      file: '#0'
-    }
-  }, utils.http.respond(req, res));
+  warmUp(workspace, req, function() {
+    workspace.tern.request({
+      files: proxy.file(req.body, workspace),
+      query: {
+        type: 'type',
+        end: req.body.cursor_position,
+        file: '#0'
+      }
+    }, utils.http.respond(req, res));
+  });
 });
 
 /**
@@ -216,27 +254,7 @@ router.post('/documentation', function(req, res) {
     return utils.http.respond(req, res)(null, undefined, 304);
   }
 
-  workspace.tern.request({
-    files: proxy.file(req.body, workspace),
-    query: {
-      type: 'completions',
-      file: '#0',
-      types: true,
-      depths: true,
-      docs: true,
-      urls: true,
-      sort: false,
-      omitObjectPrototype: false,
-      guess: true,
-      filter: true,
-      origins: true,
-      end: req.body.cursor_position
-    }
-  }, function(err) {
-    if (err) {
-      console.error(err.stack);
-    }
-
+  warmUp(workspace, req, function() {
     workspace.tern.request({
       files: proxy.file(req.body, workspace),
       query: {
@@ -245,14 +263,6 @@ router.post('/documentation', function(req, res) {
         file: '#0'
       }
     }, utils.http.respond(req, res));
-
-    if (!utils.defined(req.body.heuristics)) {
-      return;
-    }
-
-    setImmediate(function() {
-      workspace.heuristics(req.body.heuristics);
-    });
   });
 });
 
@@ -277,14 +287,16 @@ router.post('/refs', function(req, res) {
     return utils.http.respond(req, res)(null, undefined, 304);
   }
 
-  workspace.tern.request({
-    files: proxy.file(req.body, workspace),
-    query: {
-      type: 'refs',
-      end: req.body.cursor_position,
-      file: '#0'
-    }
-  }, utils.http.respond(req, res));
+  warmUp(workspace, req, function() {
+    workspace.tern.request({
+      files: proxy.file(req.body, workspace),
+      query: {
+        type: 'refs',
+        end: req.body.cursor_position,
+        file: '#0'
+      }
+    }, utils.http.respond(req, res));
+  });
 });
 
 /**
@@ -309,15 +321,17 @@ router.post('/rename', function(req, res) {
     return utils.http.respond(req, res)(null, undefined, 304);
   }
 
-  workspace.tern.request({
-    files: proxy.file(req.body, workspace),
-    query: {
-      type: 'rename',
-      end: req.body.cursor_position,
-      newName: req.body.new_name,
-      file: '#0'
-    }
-  }, utils.http.respond(req, res));
+  warmUp(workspace, req, function() {
+    workspace.tern.request({
+      files: proxy.file(req.body, workspace),
+      query: {
+        type: 'rename',
+        end: req.body.cursor_position,
+        newName: req.body.new_name,
+        file: '#0'
+      }
+    }, utils.http.respond(req, res));
+  });
 });
 
 router.post('/tags', function(req, res) {
