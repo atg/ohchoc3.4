@@ -219,11 +219,41 @@ router.post('/documentation', function(req, res) {
   workspace.tern.request({
     files: proxy.file(req.body, workspace),
     query: {
-      type: 'documentation',
-      end: req.body.cursor_position,
-      file: '#0'
+      type: 'completions',
+      file: '#0',
+      types: true,
+      depths: true,
+      docs: true,
+      urls: true,
+      sort: false,
+      omitObjectPrototype: false,
+      guess: true,
+      filter: true,
+      origins: true,
+      end: req.body.cursor_position
     }
-  }, utils.http.respond(req, res));
+  }, function(err) {
+    if (err) {
+      console.error(err.stack);
+    }
+
+    workspace.tern.request({
+      files: proxy.file(req.body, workspace),
+      query: {
+        type: 'documentation',
+        end: req.body.cursor_position,
+        file: '#0'
+      }
+    }, utils.http.respond(req, res));
+
+    if (!utils.defined(req.body.heuristics)) {
+      return;
+    }
+
+    setImmediate(function() {
+      workspace.heuristics(req.body.heuristics);
+    });
+  });
 });
 
 /**
