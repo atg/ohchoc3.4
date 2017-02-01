@@ -23,14 +23,14 @@ setInterval(function() {
   }
 }, 3000);
 
-router.post('/file/opened', function(req, res) {
+var fileOpened = function(req, res, fn) {
   var workspace = proxy.workspace(req.body);
 
   workspace.file(req.body.document_id, req.body.FILE, proxy.filename(req.body));
-  utils.http.respond(req, res)(null, 'Document opened');
-});
+  fn(null, 'Document opened');
+};
 
-router.post('/file/closed', function(req, res) {
+var fileClosed = function(req, res, fn) {
   Object.keys(proxy.workspaces).map(function(project_id) {
     return proxy.workspaces[project_id];
   }).filter(function(workspace) {
@@ -44,42 +44,51 @@ router.post('/file/closed', function(req, res) {
     }
   });
 
-  utils.http.respond(req, res)(null, 'Document closed');
-});
+  fn(null, 'Document closed');
+};
 
-var warmUp = function(workspace, req, fn) {
-  workspace.tern.request({
-    files: proxy.file(req.body, workspace),
-    query: {
-      type: 'completions',
-      file: '#0',
-      types: true,
-      depths: true,
-      docs: true,
-      urls: true,
-      sort: false,
-      omitObjectPrototype: false,
-      guess: true,
-      filter: true,
-      origins: true,
-      end: req.body.cursor_position
-    }
-  }, function(err) {
-    if (err) {
-      console.error(err.stack);
-    }
+var warmUp = function(req, res, fn) {
+  var workspace = proxy.workspace(req.body);
 
-    fn();
+  var checkType = function(fn) {
+    workspace.tern.request({
+      files: proxy.file(req.body, workspace),
+      query: {
+        type: 'type',
+        end: req.body.cursor_position,
+        file: '#0'
+      }
+    }, function(err, res) {
+      if (err) {
+        console.error(err.stack);
+      }
 
-    if (!utils.defined(req.body.heuristics)) {
-      return;
-    }
+      fn();
 
-    setImmediate(function() {
-      workspace.heuristics(req.body.heuristics);
+      if (!utils.defined(req.body.heuristics)) {
+        return;
+      }
+
+      setImmediate(function() {
+        workspace.heuristics(req.body.heuristics);
+      });
+    });
+  };
+
+  fileClosed(req, res, function() {
+    fileOpened(req, res, function() {
+      checkType(fn);
     });
   });
-}
+};
+
+router.post('/file/opened', function(req, res) {
+  fileOpened(req, res, utils.http.respond(req, res));
+});
+
+router.post('/file/closed', function(req, res) {
+  fileClosed(req, res, utils.http.respond(req, res));
+});
 
 /**
  * Asks the server for a set of completions at the given point.
@@ -180,7 +189,7 @@ router.post('/definition', function(req, res) {
     return utils.http.respond(req, res)(null, undefined, 304);
   }
 
-  warmUp(workspace, req, function() {
+  warmUp(req, res, function() {
     workspace.tern.request({
       files: proxy.file(req.body, workspace),
       query: {
@@ -223,7 +232,7 @@ router.post('/type', function(req, res) {
     return utils.http.respond(req, res)(null, undefined, 304);
   }
 
-  warmUp(workspace, req, function() {
+  warmUp(req, res, function() {
     workspace.tern.request({
       files: proxy.file(req.body, workspace),
       query: {
@@ -254,7 +263,7 @@ router.post('/documentation', function(req, res) {
     return utils.http.respond(req, res)(null, undefined, 304);
   }
 
-  warmUp(workspace, req, function() {
+  warmUp(req, res, function() {
     workspace.tern.request({
       files: proxy.file(req.body, workspace),
       query: {
@@ -287,7 +296,7 @@ router.post('/refs', function(req, res) {
     return utils.http.respond(req, res)(null, undefined, 304);
   }
 
-  warmUp(workspace, req, function() {
+  warmUp(req, res, function() {
     workspace.tern.request({
       files: proxy.file(req.body, workspace),
       query: {
@@ -321,7 +330,7 @@ router.post('/rename', function(req, res) {
     return utils.http.respond(req, res)(null, undefined, 304);
   }
 
-  warmUp(workspace, req, function() {
+  warmUp(req, res, function() {
     workspace.tern.request({
       files: proxy.file(req.body, workspace),
       query: {
